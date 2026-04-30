@@ -72,7 +72,7 @@ xr_dronecan_dsdlc generate `
   --class-name DroneCANDsdl `
   --root-namespace DroneCANGeneratedDsdl `
   --core-module-id CaFeZn/dronecan_core `
-  --output D:/Codes/Modules/dronecan_dsdl
+  --output D:/Codes/DroneCAN/dronecan_dsdl
 ```
 
 For custom DSDL, pass the root namespace directory to `generate`. The directory
