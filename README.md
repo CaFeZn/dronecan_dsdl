@@ -12,10 +12,12 @@ Generated XRobot/LibXR DroneCAN module.
 
 ## 模块布局 / Module Layout
 
-- `dronecan_dsdl.hpp`: 单文件 XRobot Application facade，包含 manifest、模块运行逻辑和 using 别名。
-- `dronecan_dsdl.hpp`: single-file XRobot Application facade with manifest, runtime logic, and using aliases.
-- `dronecan_dsdl_dsdl_detail.hpp`: DSDL 编解码公共 helper。
-- `dronecan_dsdl_dsdl_detail.hpp`: shared helpers for generated DSDL codecs.
+- `dronecan_dsdl.hpp`: 稳定 XRobot 模块入口，只转发到 `generated/dronecan_dsdl.hpp`。
+- `dronecan_dsdl.hpp`: stable XRobot module entry that forwards to `generated/dronecan_dsdl.hpp`.
+- `generated/dronecan_dsdl.hpp`: 生成的 XRobot Application facade，包含 manifest、模块运行逻辑和 using 别名。
+- `generated/dronecan_dsdl.hpp`: generated XRobot Application facade with manifest, runtime logic, and using aliases.
+- `generated/dronecan_dsdl_dsdl_detail.hpp`: DSDL 编解码公共 helper。
+- `generated/dronecan_dsdl_dsdl_detail.hpp`: shared helpers for generated DSDL codecs.
 
 ## DSDL Headers
 
@@ -23,10 +25,12 @@ Generated XRobot/LibXR DroneCAN module.
 - `uavcan_equipment_esc_status.hpp`: `uavcan.equipment.esc.Status`
 - `uavcan_protocol_dynamic_node_id_allocation.hpp`: `uavcan.protocol.dynamic_node_id.Allocation`
 
-`module.yaml` 的 `dsdl` 列表只记录 `type`，header 名称由生成器按类型名默认推导。
+`module.yaml` 的 `dsdl` 列表只记录 `type`；生成头文件名由 DSDL 类型名按约定自动推导。
+所有生成产物都在 `generated/` 子目录。
 
-The `dsdl` list in `module.yaml` records only `type`; header names are derived
-from the DSDL type names by convention.
+The `dsdl` list in `module.yaml` records only `type`; generated header names are
+derived from DSDL type names by convention. All generated artifacts are kept
+under the `generated/` subdirectory.
 
 ## XRobot 实例化示例 / XRobot Instantiation Example
 
