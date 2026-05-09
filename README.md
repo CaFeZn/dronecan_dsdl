@@ -94,16 +94,21 @@ callbacks for received transfers.
 
 ## LibXR Topic 同步发布 / LibXR Topic Publishing
 
-每条已解码的 DroneCAN 消息会同步发布到对应的 LibXR Topic。Topic 数据类型为
-`LibXR::DroneCAN::TopicMessage<T>`，其中 `metadata` 保存传输元数据，
-`message` 保存已解码的 DSDL 消息对象。
+每条已解码的 DroneCAN 消息会同步发布到对应的 RX LibXR Topic。向 TX Topic
+发布同类型数据时，facade 会调用对应的 DroneCAN 类型化发布接口。Topic 数据
+类型为 `LibXR::DroneCAN::TopicMessage<T>`，其中 `metadata` 保存传输元数据，
+`message` 保存已解码的 DSDL 消息对象；TX Topic 使用 `metadata.priority`
+作为发送优先级。
 
-Each decoded DroneCAN message is synchronously published to a LibXR Topic. The
-topic payload type is `LibXR::DroneCAN::TopicMessage<T>`, where `metadata`
-contains the transfer metadata and `message` contains the decoded DSDL object.
+Each decoded DroneCAN message is synchronously published to its RX LibXR Topic.
+Publishing the same payload type to a TX Topic makes the facade call the typed
+DroneCAN publish API. The topic payload type is
+`LibXR::DroneCAN::TopicMessage<T>`, where `metadata` contains the transfer
+metadata and `message` contains the decoded DSDL object; TX Topics use
+`metadata.priority` as the transfer priority.
 
-| DSDL 类型 / DSDL type | Topic 名称 / Topic name |
-| --- | --- |
-| `uavcan.equipment.esc.RawCommand` | `/dronecan/uavcan/equipment/esc/RawCommand` |
-| `uavcan.equipment.esc.Status` | `/dronecan/uavcan/equipment/esc/Status` |
-| `uavcan.protocol.dynamic_node_id.Allocation` | `/dronecan/uavcan/protocol/dynamic_node_id/Allocation` |
+| DSDL 类型 / DSDL type | RX Topic | TX Topic |
+| --- | --- | --- |
+| `uavcan.equipment.esc.RawCommand` | `/dronecan/uavcan/equipment/esc/RawCommand` | `/dronecan/tx/uavcan/equipment/esc/RawCommand` |
+| `uavcan.equipment.esc.Status` | `/dronecan/uavcan/equipment/esc/Status` | `/dronecan/tx/uavcan/equipment/esc/Status` |
+| `uavcan.protocol.dynamic_node_id.Allocation` | `/dronecan/uavcan/protocol/dynamic_node_id/Allocation` | `/dronecan/tx/uavcan/protocol/dynamic_node_id/Allocation` |
