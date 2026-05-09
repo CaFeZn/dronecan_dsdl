@@ -91,3 +91,19 @@ dependency-only DSDL roots.
 The module owns a `DroneCANCoreSupport::DroneCANNode`, polls it from
 `OnMonitor()`, and exposes typed publish/request/respond methods plus optional
 callbacks for received transfers.
+
+## LibXR Topic 同步发布 / LibXR Topic Publishing
+
+每条已解码的 DroneCAN 消息会同步发布到对应的 LibXR Topic。Topic 数据类型为
+`LibXR::DroneCAN::TopicMessage<T>`，其中 `metadata` 保存传输元数据，
+`message` 保存已解码的 DSDL 消息对象。
+
+Each decoded DroneCAN message is synchronously published to a LibXR Topic. The
+topic payload type is `LibXR::DroneCAN::TopicMessage<T>`, where `metadata`
+contains the transfer metadata and `message` contains the decoded DSDL object.
+
+| DSDL 类型 / DSDL type | Topic 名称 / Topic name |
+| --- | --- |
+| `uavcan.equipment.esc.RawCommand` | `/dronecan/uavcan/equipment/esc/RawCommand` |
+| `uavcan.equipment.esc.Status` | `/dronecan/uavcan/equipment/esc/Status` |
+| `uavcan.protocol.dynamic_node_id.Allocation` | `/dronecan/uavcan/protocol/dynamic_node_id/Allocation` |

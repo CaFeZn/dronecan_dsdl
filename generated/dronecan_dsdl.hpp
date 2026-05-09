@@ -45,6 +45,13 @@ class DroneCANDsdl final : public LibXR::Application
   using UavcanEquipmentEscRawCommandCallback = void (*)(void*, const LibXR::DroneCAN::TransferMetadata&, const ::DroneCANGeneratedDsdl::uavcan::equipment::esc::RawCommand&);
   using UavcanEquipmentEscStatusCallback = void (*)(void*, const LibXR::DroneCAN::TransferMetadata&, const ::DroneCANGeneratedDsdl::uavcan::equipment::esc::Status&);
   using UavcanProtocolDynamicNodeIdAllocationCallback = void (*)(void*, const LibXR::DroneCAN::TransferMetadata&, const ::DroneCANGeneratedDsdl::uavcan::protocol::dynamic_node_id::Allocation&);
+  using UavcanEquipmentEscRawCommandTopicData = LibXR::DroneCAN::TopicMessage<::DroneCANGeneratedDsdl::uavcan::equipment::esc::RawCommand>;
+  using UavcanEquipmentEscStatusTopicData = LibXR::DroneCAN::TopicMessage<::DroneCANGeneratedDsdl::uavcan::equipment::esc::Status>;
+  using UavcanProtocolDynamicNodeIdAllocationTopicData = LibXR::DroneCAN::TopicMessage<::DroneCANGeneratedDsdl::uavcan::protocol::dynamic_node_id::Allocation>;
+
+  static constexpr const char* kUavcanEquipmentEscRawCommandTopicName = "/dronecan/uavcan/equipment/esc/RawCommand";
+  static constexpr const char* kUavcanEquipmentEscStatusTopicName = "/dronecan/uavcan/equipment/esc/Status";
+  static constexpr const char* kUavcanProtocolDynamicNodeIdAllocationTopicName = "/dronecan/uavcan/protocol/dynamic_node_id/Allocation";
 
   DroneCANDsdl(LibXR::HardwareContainer& hw,
                         LibXR::ApplicationManager& appmgr,
@@ -56,6 +63,9 @@ class DroneCANDsdl final : public LibXR::Application
       : can_(*hw.FindOrExit<LibXR::CAN>({NormalizeCString(can_alias, "can0")})),
         timebase_(*hw.FindOrExit<LibXR::Timebase>({NormalizeCString(timebase_alias, "timebase")})),
         node_(can_, timebase_, node_arena_.data(), node_arena_.size(), MakeNodeConfig(node_status_period_ms)),
+        uavcan_equipment_esc_raw_command_topic_(LibXR::Topic::CreateTopic<UavcanEquipmentEscRawCommandTopicData>(kUavcanEquipmentEscRawCommandTopicName, nullptr, false, true, true)),
+        uavcan_equipment_esc_status_topic_(LibXR::Topic::CreateTopic<UavcanEquipmentEscStatusTopicData>(kUavcanEquipmentEscStatusTopicName, nullptr, false, true, true)),
+        uavcan_protocol_dynamic_node_id_allocation_topic_(LibXR::Topic::CreateTopic<UavcanProtocolDynamicNodeIdAllocationTopicData>(kUavcanProtocolDynamicNodeIdAllocationTopicName, nullptr, false, true, true)),
         uavcan_equipment_esc_raw_command_handler_(LibXR::DroneCAN::TransferHandler::Create(OnUavcanEquipmentEscRawCommandTransferStatic, this)),
         uavcan_equipment_esc_status_handler_(LibXR::DroneCAN::TransferHandler::Create(OnUavcanEquipmentEscStatusTransferStatic, this)),
         uavcan_protocol_dynamic_node_id_allocation_handler_(LibXR::DroneCAN::TransferHandler::Create(OnUavcanProtocolDynamicNodeIdAllocationTransferStatic, this))
@@ -131,6 +141,21 @@ class DroneCANDsdl final : public LibXR::Application
     return node_.Broadcast(::DroneCANGeneratedDsdl::uavcan::protocol::dynamic_node_id::Allocation::kDataTypeId, ::DroneCANGeneratedDsdl::uavcan::protocol::dynamic_node_id::Allocation::kDataTypeSignature, priority, LibXR::ConstRawData(payload.data(), payload_size));
   }
 
+  LibXR::Topic UavcanEquipmentEscRawCommandTopic() const noexcept
+  {
+    return uavcan_equipment_esc_raw_command_topic_;
+  }
+
+  LibXR::Topic UavcanEquipmentEscStatusTopic() const noexcept
+  {
+    return uavcan_equipment_esc_status_topic_;
+  }
+
+  LibXR::Topic UavcanProtocolDynamicNodeIdAllocationTopic() const noexcept
+  {
+    return uavcan_protocol_dynamic_node_id_allocation_topic_;
+  }
+
 
  private:
   static constexpr std::size_t kNodeArenaSize = 4096U;
@@ -192,6 +217,9 @@ class DroneCANDsdl final : public LibXR::Application
       return;
     }
 
+    UavcanEquipmentEscRawCommandTopicData topic_data{meta, decoded};
+    uavcan_equipment_esc_raw_command_topic_.Publish(topic_data);
+
     if (uavcan_equipment_esc_raw_command_callback_ != nullptr)
     {
       uavcan_equipment_esc_raw_command_callback_(uavcan_equipment_esc_raw_command_context_, meta, decoded);
@@ -217,6 +245,9 @@ class DroneCANDsdl final : public LibXR::Application
     {
       return;
     }
+
+    UavcanEquipmentEscStatusTopicData topic_data{meta, decoded};
+    uavcan_equipment_esc_status_topic_.Publish(topic_data);
 
     if (uavcan_equipment_esc_status_callback_ != nullptr)
     {
@@ -244,6 +275,9 @@ class DroneCANDsdl final : public LibXR::Application
       return;
     }
 
+    UavcanProtocolDynamicNodeIdAllocationTopicData topic_data{meta, decoded};
+    uavcan_protocol_dynamic_node_id_allocation_topic_.Publish(topic_data);
+
     if (uavcan_protocol_dynamic_node_id_allocation_callback_ != nullptr)
     {
       uavcan_protocol_dynamic_node_id_allocation_callback_(uavcan_protocol_dynamic_node_id_allocation_context_, meta, decoded);
@@ -256,6 +290,9 @@ class DroneCANDsdl final : public LibXR::Application
   DroneCANCoreSupport::CanPoller* can_poller_ = nullptr;
   std::array<std::uint8_t, kNodeArenaSize> node_arena_{};
   DroneCANCoreSupport::DroneCANNode node_;
+  LibXR::Topic uavcan_equipment_esc_raw_command_topic_;
+  LibXR::Topic uavcan_equipment_esc_status_topic_;
+  LibXR::Topic uavcan_protocol_dynamic_node_id_allocation_topic_;
   LibXR::DroneCAN::TransferHandler uavcan_equipment_esc_raw_command_handler_;
   void* uavcan_equipment_esc_raw_command_context_ = nullptr;
   UavcanEquipmentEscRawCommandCallback uavcan_equipment_esc_raw_command_callback_ = nullptr;
