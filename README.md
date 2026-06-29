@@ -1,43 +1,89 @@
 # dronecan_dsdl
 
-已生成的 XRobot/LibXR DroneCAN 模块。
+通用 XRobot/LibXR DroneCAN DSDL facade 模块。
 
-Generated XRobot/LibXR DroneCAN module.
+Generic XRobot/LibXR DroneCAN DSDL facade module.
 
-## DSDL 类型 / DSDL Types
+## Scope
 
-- `uavcan.equipment.esc.RawCommand`
-- `uavcan.equipment.esc.Status`
-- `uavcan.protocol.dynamic_node_id.Allocation`
+`dronecan_dsdl` 作为通用模块仓库，只保存稳定模块入口、XRobot manifest、CMake
+接入和生成器约定。具体 DSDL 类型、Topic、回调和编解码头文件由 DroneCAN DSDL
+generator 针对使用该模块的项目生成。
 
-## 模块布局 / Module Layout
+As a generic module repository, `dronecan_dsdl` stores only the stable module
+entry, XRobot manifest, CMake integration, and generator contract. Concrete DSDL
+types, topics, callbacks, and codec headers are emitted by the DroneCAN DSDL
+generator for each consuming project.
 
-- `dronecan_dsdl.hpp`: 稳定 XRobot 模块入口，只转发到 `generated/dronecan_dsdl.hpp`。
-- `dronecan_dsdl.hpp`: stable XRobot module entry that forwards to `generated/dronecan_dsdl.hpp`.
-- `generated/dronecan_dsdl.hpp`: 生成的 XRobot Application facade，包含 manifest、模块运行逻辑和 using 别名。
-- `generated/dronecan_dsdl.hpp`: generated XRobot Application facade with manifest, runtime logic, and using aliases.
-- `generated/dronecan_dsdl_dsdl_detail.hpp`: DSDL 编解码公共 helper。
-- `generated/dronecan_dsdl_dsdl_detail.hpp`: shared helpers for generated DSDL codecs.
+## Base Node
 
-## DSDL Headers
+默认参数只描述基础 DroneCAN 节点实例：
 
-- `uavcan_equipment_esc_raw_command.hpp`: `uavcan.equipment.esc.RawCommand`
-- `uavcan_equipment_esc_status.hpp`: `uavcan.equipment.esc.Status`
-- `uavcan_protocol_dynamic_node_id_allocation.hpp`: `uavcan.protocol.dynamic_node_id.Allocation`
+- `node_id`
+- `can_alias`
+- `timebase_alias`
+- `node_name`
+- `node_status_period_ms`
 
-`module.yaml` 的 `dsdl` 列表只记录 `type`；生成头文件名由 DSDL 类型名按约定自动推导。
-所有生成产物都在 `generated/` 子目录。
+这些参数足够让 `dronecan_core` 周期发布 `uavcan.protocol.NodeStatus`，也就是低频
+节点健康/模式状态报文。`NodeStatus` 由 `DroneCANNode::Poll()` 发送，不需要作为
+生成 DSDL handler 写进本模块仓库。
 
-The `dsdl` list in `module.yaml` records only `type`; generated header names are
-derived from DSDL type names by convention. All generated artifacts are kept
-under the `generated/` subdirectory.
+The default arguments describe only the base DroneCAN node instance. They are
+enough for `dronecan_core` to publish `uavcan.protocol.NodeStatus`, the low-rate
+node health/mode status message. `NodeStatus` is emitted by
+`DroneCANNode::Poll()` and does not need a generated DSDL handler in this module
+repository.
 
-## XRobot 实例化示例 / XRobot Instantiation Example
+## XRobot Manifest
 
-在 `User/xrobot.yaml` 中实例化生成的 facade；`dronecan_core` 作为依赖由构建系统加入，不需要在这里单独实例化。
+xrobot-org 官方工具从模块同名头文件里的 `MODULE MANIFEST V2` 读取模块元数据。
+本模块的权威 manifest 位于 `dronecan_dsdl.hpp`。不要使用 `module.yaml` 作为
+XRobot 模块规范文件。
 
-Instantiate the generated facade in `User/xrobot.yaml`. `dronecan_core` is added
-as a dependency by the build and does not need a separate entry here.
+The official xrobot-org tools read module metadata from `MODULE MANIFEST V2` in
+the module header with the same name as the module directory. The authoritative
+manifest for this module is in `dronecan_dsdl.hpp`. Do not use `module.yaml` as
+the XRobot module metadata file.
+
+## Generated Output
+
+`generated/` 是应用项目的生成产物目录，已由本模块的 `.gitignore` 忽略。生成器在
+构建前写入这些文件：
+
+- `generated/dronecan_dsdl.hpp`: generated `LibXR::Application` facade
+- `generated/dronecan_dsdl_dsdl_detail.hpp`: shared DSDL codec helpers
+- `generated/uavcan_*.hpp`: generated DSDL type codecs
+
+`generated/` is application-specific generator output and is ignored by this
+module's `.gitignore`. The generator must populate it before firmware build.
+
+## Repository Files
+
+应当保存在通用 module 仓库里的文件：
+
+- `.gitignore`
+- `CMakeLists.txt`
+- `README.md`
+- `dronecan_dsdl.hpp`
+- `info.cmake`
+- `src/dronecan_dsdl_compile.cpp`
+
+不应当保存在通用 module 仓库里的文件：
+
+- `generated/`
+- `module.yaml`
+- `User/xrobot.yaml`
+- 节点 ID、节点名、灯珠数量等项目参数
+- DSDL 类型选择、生成开关和自定义 DSDL 根目录等生成器输入
+
+Files that belong in the generic module repository are the stable integration
+files listed above. Generated DSDL output, project configuration, board-specific
+runtime values, and generator inputs belong to the consuming project.
+
+## Project Configuration
+
+`User/xrobot.yaml` 只在使用该模块的主工程里存在，用于配置运行时实例参数。例如：
 
 ```yaml
 modules:
@@ -51,64 +97,41 @@ modules:
     node_status_period_ms: 1000
 ```
 
-## 自定义 DSDL / Custom DSDL
+`User/xrobot.yaml` belongs to the consuming project and configures runtime
+instance arguments only. DSDL type selection is handled by the DroneCAN DSDL
+generator configuration or command line, not by the XRobot manifest.
 
-自定义 DSDL 时，把 DSDL 根命名空间目录作为 `generate` 的位置参数。
-例如 `my_company.actuator.MyCommand` 对应的源文件通常放在：
+## Generator Contract
+
+生成器负责根据所选 DSDL 类型生成 facade。生成后的 facade 持有一个
+`DroneCANCoreSupport::DroneCANNode`，在 `OnMonitor()` 中轮询节点，并为选中的
+DSDL 类型暴露类型化 publish、Topic 和接收回调。
+
+The generator creates the facade for the selected DSDL types. The generated
+facade owns a `DroneCANCoreSupport::DroneCANNode`, polls it from `OnMonitor()`,
+and exposes typed publish APIs, LibXR topics, and receive callbacks for selected
+DSDL types.
+
+自定义 DSDL 时，生成器输入应来自项目或生成脚本。例如 `my_company.light.SetColor`
+通常来自：
 
 ```text
 CustomDSDL/
   my_company/
-    actuator/
-      20000.MyCommand.uavcan
+    light/
+      20000.SetColor.uavcan
 ```
 
-命令中应传入 `CustomDSDL/my_company`，并用 `--type my_company.actuator.MyCommand`
-指定要生成的类型。如果自定义类型引用标准 `uavcan.*` 类型，保留 `--builtin-dsdl`。
-如果有额外只用于依赖解析的 DSDL 根目录，可用 `-I` / `--lookup-dir` 添加。
+示例命令：
 
 ```powershell
 xr_dronecan_dsdlc generate `
   D:/Path/To/CustomDSDL/my_company `
   --builtin-dsdl `
-  --type my_company.actuator.MyCommand `
+  --type my_company.light.SetColor `
   --module-name dronecan_dsdl `
   --class-name DroneCANDsdl `
   --root-namespace DroneCANGeneratedDsdl `
   --core-module-id CaFeZn/dronecan_core `
-  --output D:/Codes/DroneCAN/dronecan_dsdl
+  --output D:/Path/To/Project/Modules/dronecan_dsdl
 ```
-
-For custom DSDL, pass the root namespace directory to `generate`. The directory
-above is passed as `CustomDSDL/my_company`, while the type is selected with
-`--type my_company.actuator.MyCommand`. Keep `--builtin-dsdl` when standard
-`uavcan.*` dependencies are referenced, and use `-I` / `--lookup-dir` for extra
-dependency-only DSDL roots.
-
-该模块持有一个 `DroneCANCoreSupport::DroneCANNode`，通过 `OnMonitor()` 轮询，
-并暴露类型化的发布、请求、响应方法，以及可选的接收传输回调。
-
-The module owns a `DroneCANCoreSupport::DroneCANNode`, polls it from
-`OnMonitor()`, and exposes typed publish/request/respond methods plus optional
-callbacks for received transfers.
-
-## LibXR Topic 同步发布 / LibXR Topic Publishing
-
-每条已解码的 DroneCAN 消息会同步发布到对应的 RX LibXR Topic。向 TX Topic
-发布同类型数据时，facade 会调用对应的 DroneCAN 类型化发布接口。Topic 数据
-类型为 `LibXR::DroneCAN::TopicMessage<T>`，其中 `metadata` 保存传输元数据，
-`message` 保存已解码的 DSDL 消息对象；TX Topic 使用 `metadata.priority`
-作为发送优先级。
-
-Each decoded DroneCAN message is synchronously published to its RX LibXR Topic.
-Publishing the same payload type to a TX Topic makes the facade call the typed
-DroneCAN publish API. The topic payload type is
-`LibXR::DroneCAN::TopicMessage<T>`, where `metadata` contains the transfer
-metadata and `message` contains the decoded DSDL object; TX Topics use
-`metadata.priority` as the transfer priority.
-
-| DSDL 类型 / DSDL type | RX Topic | TX Topic |
-| --- | --- | --- |
-| `uavcan.equipment.esc.RawCommand` | `/dronecan/uavcan/equipment/esc/RawCommand` | `/dronecan/tx/uavcan/equipment/esc/RawCommand` |
-| `uavcan.equipment.esc.Status` | `/dronecan/uavcan/equipment/esc/Status` | `/dronecan/tx/uavcan/equipment/esc/Status` |
-| `uavcan.protocol.dynamic_node_id.Allocation` | `/dronecan/uavcan/protocol/dynamic_node_id/Allocation` | `/dronecan/tx/uavcan/protocol/dynamic_node_id/Allocation` |
