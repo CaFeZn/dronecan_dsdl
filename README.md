@@ -58,16 +58,43 @@ the XRobot module metadata file.
 `generated/` is application-specific generator output and is ignored by this
 module's `.gitignore`. The generator must populate it before firmware build.
 
+## Bundled Generator
+
+本仓库通过嵌套 submodule 携带 DSDL 生成器源码：
+
+```text
+tools/xrobot-dronecan-dsdlc
+```
+
+因此消费工程应使用 recursive submodule 拉取：
+
+```powershell
+git submodule update --init --recursive
+```
+
+本机可按需从该子模块安装生成器：
+
+```powershell
+python -m pip install -e Modules/dronecan_dsdl/tools/xrobot-dronecan-dsdlc
+```
+
+The generator source is carried as a nested submodule under
+`tools/xrobot-dronecan-dsdlc`. Consuming projects should initialize submodules
+recursively, then install the generator from that local path when regeneration
+is needed.
+
 ## Repository Files
 
 应当保存在通用 module 仓库里的文件：
 
 - `.gitignore`
+- `.gitmodules`
 - `CMakeLists.txt`
 - `README.md`
 - `dronecan_dsdl.hpp`
 - `info.cmake`
 - `src/dronecan_dsdl_compile.cpp`
+- `tools/xrobot-dronecan-dsdlc`
 
 不应当保存在通用 module 仓库里的文件：
 
@@ -125,7 +152,7 @@ CustomDSDL/
 示例命令：
 
 ```powershell
-xr_dronecan_dsdlc generate `
+python -m xrobot_dronecan_dsdlc.cli generate `
   D:/Path/To/CustomDSDL/my_company `
   --builtin-dsdl `
   --type my_company.light.SetColor `
