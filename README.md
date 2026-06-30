@@ -124,9 +124,32 @@ modules:
     node_status_period_ms: 1000
 ```
 
-`User/xrobot.yaml` belongs to the consuming project and configures runtime
-instance arguments only. DSDL type selection is handled by the DroneCAN DSDL
-generator configuration or command line, not by the XRobot manifest.
+`User/xrobot.yaml` belongs to the consuming project. Runtime arguments stay in
+`constructor_args`; project-specific DSDL generation inputs stay in the optional
+`generator.dsdl` block on the same module entry.
+
+```yaml
+modules:
+- id: dronecan_dsdl
+  name: dronecan_dsdl
+  constructor_args:
+    node_id: 10
+    can_alias: can0
+    timebase_alias: timebase
+    node_name: org.libxr.dronecan.generated
+    node_status_period_ms: 1000
+  generator:
+    dsdl:
+      builtin: true
+      types:
+        - uavcan.protocol.NodeStatus
+      class_name: DroneCANDsdl
+      root_namespace: DroneCANGeneratedDsdl
+      core_module_id: CaFeZn/dronecan_core
+```
+
+The generator reads `generator.dsdl.types` when invoked with `--xrobot-yaml`.
+If `types` is omitted, it emits only `uavcan.protocol.NodeStatus`.
 
 ## Generator Contract
 
@@ -150,6 +173,14 @@ CustomDSDL/
 ```
 
 示例命令：
+
+```powershell
+python -m xrobot_dronecan_dsdlc.cli generate `
+  --xrobot-yaml D:/Path/To/Project/User/xrobot.yaml `
+  --module-id dronecan_dsdl
+```
+
+也可以显式传入自定义 DSDL 根和类型：
 
 ```powershell
 python -m xrobot_dronecan_dsdlc.cli generate `
